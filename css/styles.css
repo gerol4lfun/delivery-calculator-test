@@ -1,0 +1,298 @@
+ <style>
+        /* Основные стили */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f9;
+            color: #333;
+        }
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .calculator-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            position: relative;
+        }
+        input[type="text"], input[type="password"], select, button, textarea {
+            padding: 10px; /* Увеличен padding для лучшего восприятия */
+            margin: 5px 0;
+            font-size: 16px; /* Увеличен размер шрифта */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background: #dc3545; /* Красный цвет для всех кнопок по умолчанию */
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .hidden {
+            display: none;
+        }
+        label {
+            font-size: 16px; /* Увеличен размер шрифта */
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .auth-container h2, .block h2 {
+            margin-bottom: 20px;
+            font-size: 20px; /* Увеличен размер шрифта */
+            color: #fff;
+            background-color: #6c757d; /* Нейтральный серый фон */
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .auth-container p {
+            color: red;
+            display: none;
+            margin: 10px 0;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .block {
+            flex: 1 1 30%;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            box-sizing: border-box;
+            min-width: 300px;
+            position: relative;
+        }
+        .block:last-child {
+            border-right: none;
+        }
+        .logout {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f5f5f5;
+            color: #555;
+            border: 1px solid #ddd;
+            font-size: 14px; /* Увеличен размер шрифта */
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+        }
+        .logout:hover {
+            background-color: #e0e0e0;
+            color: #000;
+        }
+        .parameters {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .parameters label {
+            width: 40%;
+            margin-right: 10px;
+            text-align: left;
+            padding-right: 10px;
+            box-sizing: border-box;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        .parameters select {
+            width: 60%;
+            text-align: center; /* Центрирование текста внутри select */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            background-size: 10px;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        /* Стили для центрирования текста в опциях select */
+        select option {
+            text-align: center;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        .additional-services, .additional-products {
+            margin-top: 20px;
+        }
+        .checkbox-group-large {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .checkbox-group-large label {
+            width: 48%;
+            text-align: left;
+            font-weight: normal;
+            cursor: pointer;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        .additional-products h3 {
+            margin-bottom: 10px;
+            font-size: 18px; /* Увеличен размер шрифта */
+            color: #333;
+        }
+        .additional-products .product-item {
+            margin-bottom: 10px;
+        }
+        .product-label {
+            display: flex;
+            justify-content: space-between; /* Распределение пространства между элементами */
+            align-items: center;
+            margin-bottom: 5px; /* Небольшой отступ снизу */
+            cursor: pointer;
+        }
+        .product-label input[type="checkbox"] {
+            margin-right: 10px;
+            width: 20px; /* Увеличен размер чекбокса */
+            height: 20px;
+        }
+        .product-label .product-name {
+            flex-grow: 1; /* Название занимает всё доступное пространство слева */
+            text-align: left; /* Выравнивание названия по левому краю */
+            margin-left: 0; /* Убираем отступ между чекбоксом и названием */
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        .product-label .price {
+            font-weight: bold; /* Только цена жирная */
+            color: #000; /* Сделать цену черной */
+            white-space: nowrap; /* Предотвращает перенос цен на новую строку */
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        #result, #map {
+            margin-top: 20px;
+            font-size: 18px; /* Увеличен размер шрифта */
+            color: #007BFF;
+            text-align: center;
+            white-space: pre-wrap; /* Чтобы переносы строк \n работали */
+        }
+        #map {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        .summary {
+            margin-top: 20px;
+            font-size: 16px;
+            text-align: center;
+            font-weight: bold;
+            white-space: pre-wrap; /* Чтобы переносы строк \n работали */
+        }
+        /* Стили для подсказок */
+        .address-container {
+            position: relative; /* Для корректного позиционирования подсказок */
+            width: 100%; /* Полная ширина для выравнивания */
+        }
+        /* Поле ввода адреса */
+        #address {
+            width: 100%; /* Ширина поля ввода */
+            box-sizing: border-box; /* Учитываем padding в ширине */
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        /* Блок подсказок */
+        #suggestions {
+            position: absolute;
+            top: 100%; /* Под полем ввода */
+            left: 0;
+            width: 100%;
+            border: 1px solid #ccc;
+            background: white;
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Тень для объёма */
+            display: none; /* Скрываем по умолчанию */
+            transition: all 0.3s ease; /* Плавные переходы */
+        }
+        /* Подсказки */
+        .suggestion {
+            padding: 10px; /* Увеличен отступ для удобства */
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        /* Подсветка при наведении */
+        .suggestion:hover {
+            background: #f0f0f0; /* Светло-серый фон */
+        }
+        /* Стили для выделения совпадений */
+        .highlight {
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        /* Специфичные стили для кнопок сброса */
+        .reset-button {
+            background: #dc3545; /* Красный цвет */
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        .reset-button:hover {
+            background: #c82333;
+        }
+
+        /* Специфичные стили для кнопок сброса доставки и фильтров */
+        /* Если кнопки имеют разные классы, можно указать их отдельно */
+        .reset-delivery-button {
+            background: #dc3545; /* Красный цвет */
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        .reset-delivery-button:hover {
+            background: #c82333;
+        }
+
+        /* Выравнивание радио-кнопок в блоке доставки */
+        .delivery-options {
+            display: flex;
+            gap: 20px; /* Расстояние между опциями */
+            margin-bottom: 10px;
+        }
+        .delivery-options label {
+            display: flex;
+            align-items: center;
+            font-size: 16px; /* Увеличен размер шрифта */
+        }
+        .delivery-options input[type="radio"] {
+            margin-right: 5px;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Корректировка отступов в коммерческом предложении */
+        #commercial-offer {
+            font-size: 16px; /* Увеличен размер шрифта */
+            padding: 10px;
+            resize: none;
+        }
+    </style>
