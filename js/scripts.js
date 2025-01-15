@@ -826,24 +826,30 @@
                 let snowLoadFinalText = `${snowLoadNum} кг/м2`;
 
                 // Дополнительные услуги
-                const bracingChecked = document.getElementById('bracing').checked;
-                const groundHooksChecked = document.getElementById('ground-hooks').checked;
-                const assemblyChecked = document.getElementById('assembly').checked;
-                const onWoodChecked = document.getElementById('on-wood').checked;
-                const onConcreteChecked = document.getElementById('on-concrete').checked;
+const bracingCheckbox = document.getElementById('bracing');
+const groundHooksCheckbox = document.getElementById('ground-hooks');
+const assemblyCheckbox = document.getElementById('assembly');
+const onWoodCheckbox = document.getElementById('on-wood');
+const onConcreteCheckbox = document.getElementById('on-concrete');
 
-                // Расчёт стоимости бруса
-                if (bracingChecked) {
-                    const bracingPrice = additionalServicesData["Брус"].price_by_length[length];
-                    if (bracingPrice) {
-                        foundationCost += bracingPrice;
-                        foundationText += `\nОснование из бруса - ${formatPrice(bracingPrice)} рублей`;
-                    } else {
-                        alert(`Не найдена стоимость бруса для длины ${length} м.`);
-                        return;
-                    }
-                }
+const bracingChecked = bracingCheckbox ? bracingCheckbox.checked : false;
+const groundHooksChecked = groundHooksCheckbox ? groundHooksCheckbox.checked : false;
+const assemblyChecked = assemblyCheckbox ? assemblyCheckbox.checked : false;
+const onWoodChecked = onWoodCheckbox ? onWoodCheckbox.checked : false;
+const onConcreteChecked = onConcreteCheckbox ? onConcreteCheckbox.checked : false;
 
+// Расчёт стоимости бруса
+if (bracingChecked) {
+    const bracingPrice = additionalServicesData["Брус"].price_by_length[length];
+    if (bracingPrice) {
+        foundationCost += bracingPrice;
+        foundationText += `\nОснование из бруса - ${formatPrice(bracingPrice)} рублей`;
+    } else {
+        alert(`Не найдена стоимость бруса для длины ${length} м.`);
+        return;
+    }
+}
+                        
                 // Расчёт стоимости штырей
                 if (groundHooksChecked) {
                     const quantityData = bracingChecked ? additionalServicesData["Штыри"].quantity_by_length["with_bracing"] : additionalServicesData["Штыри"].quantity_by_length["without_bracing"];
