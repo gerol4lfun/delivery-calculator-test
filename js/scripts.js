@@ -840,71 +840,74 @@ const onConcreteChecked = onConcreteCheckbox ? onConcreteCheckbox.checked : fals
 
 // Расчёт стоимости бруса
 if (bracingChecked) {
-    const bracingPrice = additionalServicesData["Брус"].price_by_length[length];
-    if (bracingPrice) {
-        foundationCost += bracingPrice;
-        foundationText += `\nОснование из бруса - ${formatPrice(bracingPrice)} рублей`;
-    } else {
-        alert(`Не найдена стоимость бруса для длины ${length} м.`);
-        return;
-    }
+  const bracingPrice = additionalServicesData["Брус"].price_by_length[length];
+  if (bracingPrice) {
+    foundationCost += bracingPrice;
+    foundationText += `\nОснование из бруса - ${formatPrice(bracingPrice)} рублей`;
+  } else {
+    alert(`Не найдена стоимость бруса для длины ${length} м.`);
+    return;
+  }
 }
-                        
-                // Расчёт стоимости штырей
-                if (groundHooksChecked) {
-                    const quantityData = bracingChecked ? additionalServicesData["Штыри"].quantity_by_length["with_bracing"] : additionalServicesData["Штыри"].quantity_by_length["without_bracing"];
-                    const stakesQuantity = quantityData[length];
-                    if (stakesQuantity) {
-                        const stakesCost = stakesQuantity * additionalServicesData["Штыри"].price_per_unit;
-                        foundationCost += stakesCost;
-                        foundationText += `\nГрунтозацепы ${stakesQuantity} шт - ${formatPrice(stakesCost)} рублей`;
-                    } else {
-                        alert(`Не найдена информация о количестве штырей для длины ${length} м.`);
-                        return;
-                    }
-                }
 
-                // Расчёт стоимости сборки или монтажа на фундамент клиента
-                if (assemblyChecked) {
-                    const assemblyCategory = getAssemblyCategory(form, width); // Получаем категорию сборки
-                    if (assemblyCategory) {
-                        const assemblyCostCalculated = calculateAssemblyCost(form, assemblyCategory, length);
-                        if (assemblyCostCalculated > 0) {
-                            assemblyCost += assemblyCostCalculated;
-                            assemblyText += `\nСборка и установка - ${formatPrice(assemblyCostCalculated)} рублей`;
-                        } else {
-                            alert(`Не найдена стоимость сборки для формы "${form}", ширины "${width}М" и длины "${length} м".`);
-                            return;
-                        }
-                    } else {
-                        alert(`Категория сборки для формы "${form}" и ширины "${width}М" не определена.`);
-                        return;
-                    }
-                } else {
-                    // Если сборка не выбрана, проверяем монтаж на фундамент клиента
-                    if (onWoodChecked || onConcreteChecked) {
-                        if (onWoodChecked) {
-                            const woodPrice = parseFloat(document.getElementById('on-wood').getAttribute('data-price'));
-                            if (woodPrice) {
-                                foundationCost += woodPrice;
-                                foundationText += `\nМонтаж на брус клиента - ${formatPrice(woodPrice)} рублей`;
-                            } else {
-                                alert(`Не найдена стоимость монтажа на брус.`);
-                                return;
-                            }
-                        }
-                        if (onConcreteChecked) {
-                            const concretePrice = parseFloat(document.getElementById('on-concrete').getAttribute('data-price'));
-                            if (concretePrice) {
-                                foundationCost += concretePrice;
-                                foundationText += `\nМонтаж на бетон клиента - ${formatPrice(concretePrice)} рублей`;
-                            } else {
-                                alert(`Не найдена стоимость монтажа на бетон.`);
-                                return;
-                            }
-                        }
-                    }
-                }
+// Расчёт стоимости штырей
+if (groundHooksChecked) {
+  // Если выбраны с брусом, используем соответствующие данные, иначе – другие
+  const quantityData = bracingChecked
+      ? additionalServicesData["Штыри"].quantity_by_length["with_bracing"]
+      : additionalServicesData["Штыри"].quantity_by_length["without_bracing"];
+  const stakesQuantity = quantityData[length];
+  if (stakesQuantity) {
+    const stakesCost = stakesQuantity * additionalServicesData["Штыри"].price_per_unit;
+    foundationCost += stakesCost;
+    foundationText += `\nГрунтозацепы ${stakesQuantity} шт - ${formatPrice(stakesCost)} рублей`;
+  } else {
+    alert(`Не найдена информация о количестве штырей для длины ${length} м.`);
+    return;
+  }
+}
+
+// Расчёт стоимости сборки или монтажа на фундамент клиента
+if (assemblyChecked) {
+  const assemblyCategory = getAssemblyCategory(form, width); // Получаем категорию сборки
+  if (assemblyCategory) {
+    const assemblyCostCalculated = calculateAssemblyCost(form, assemblyCategory, length);
+    if (assemblyCostCalculated > 0) {
+      assemblyCost += assemblyCostCalculated;
+      assemblyText += `\nСборка и установка - ${formatPrice(assemblyCostCalculated)} рублей`;
+    } else {
+      alert(`Не найдена стоимость сборки для формы "${form}", ширины "${width}М" и длины "${length} м".`);
+      return;
+    }
+  } else {
+    alert(`Категория сборки для формы "${form}" и ширины "${width}М" не определена.`);
+    return;
+  }
+} else {
+  // Если сборка не выбрана, проверяем монтаж на фундамент клиента
+  if (onWoodChecked || onConcreteChecked) {
+    if (onWoodChecked) {
+      const woodPrice = onWoodCheckbox ? parseFloat(onWoodCheckbox.getAttribute('data-price')) : 0;
+      if (woodPrice) {
+        foundationCost += woodPrice;
+        foundationText += `\nМонтаж на брус клиента - ${formatPrice(woodPrice)} рублей`;
+      } else {
+        alert(`Не найдена стоимость монтажа на брус.`);
+        return;
+      }
+    }
+    if (onConcreteChecked) {
+      const concretePrice = onConcreteCheckbox ? parseFloat(onConcreteCheckbox.getAttribute('data-price')) : 0;
+      if (concretePrice) {
+        foundationCost += concretePrice;
+        foundationText += `\nМонтаж на бетон клиента - ${formatPrice(concretePrice)} рублей`;
+      } else {
+        alert(`Не найдена стоимость монтажа на бетон.`);
+        return;
+      }
+    }
+  }
+}
 
                 // Дополнительные товары
                 const additionalProducts = [];
