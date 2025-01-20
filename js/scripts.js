@@ -1061,53 +1061,97 @@ if (assemblyChecked) {
 }
 
             // Функция формирования коммерческого предложения
-            function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additionalProducts, additionalProductsCost, deliveryPrice, finalTotalPrice, selectedEntry, basePriceText, assemblyText, foundationText, additionalProductsText, snowLoadFinalText) {
-                // Извлечение дополнительных характеристик
-                const height = selectedEntry.height ? selectedEntry.height : "Не указано";
-                const horizontalTies = selectedEntry.horizontal_ties ? selectedEntry.horizontal_ties : "Не указано";
-                const equipment = selectedEntry.equipment || "Не указано";
+function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additionalProducts, additionalProductsCost, deliveryPrice, finalTotalPrice, selectedEntry, basePriceText, assemblyText, foundationText, additionalProductsText, snowLoadFinalText) {
+    // Массив ключевых слов, обозначающих форму теплицы
+    const formKeywords = [
+      "ПРЯМОСТЕННАЯ",
+      "АРОЧНАЯ",
+      "КАПЛЕВИДНАЯ",
+      "ДОМИК",
+      "ПРИСТЕННАЯ",
+      "МИТЛАЙДЕР",
+      "ПРОМЫШЛЕННАЯ",
+      "НАВЕС"
+    ];
 
-                // Получаем название теплицы из базы данных
-                const baseName = selectedEntry.form_name.toUpperCase();
-                // Если в названии уже есть слово "ТЕПЛИЦА", не добавляем его повторно
-                const cleanName = baseName.startsWith("ТЕПЛИЦА") ? baseName : `ТЕПЛИЦА ${baseName}`;
+    // Функция для проверки, содержит ли название хотя бы одно ключевое слово
+    function containsFormKeyword(name, keywords) {
+      const upperName = name.toUpperCase();
+      return keywords.some(keyword => upperName.includes(keyword));
+    }
 
-                const frameValue = document.getElementById("frame").value;
-                const widthValue = document.getElementById("width").value;
-                const lengthValue = document.getElementById("length").value;
-                const arcStepValue = document.getElementById("arcStep").value;
-                const polycarbonateValue = document.getElementById("polycarbonate").value;
+    // Извлечение дополнительных характеристик
+    const height = selectedEntry.height ? selectedEntry.height : "Не указано";
+    const horizontalTies = selectedEntry.horizontal_ties ? selectedEntry.horizontal_ties : "Не указано";
+    const equipment = selectedEntry.equipment || "Не указано";
 
-                // Формирование текста КП
-                let commercialOffer = `${cleanName}\n\n` +
-                    `Каркас: ${frameValue}\n` +
-                    `Ширина: ${widthValue} м\n` +
-                    `Длина: ${lengthValue} м\n` +
-                    `Высота: ${height}\n` +
-                    `Шаг дуги: ${arcStepValue} м\n` +
-                    `Поликарбонат с УФ защитой: ${polycarbonateValue}\n` +
-                    `Снеговая нагрузка: ${snowLoadFinalText}\n` +
-                    `Горизонтальные стяжки: ${horizontalTies}\n` +
-                    `Комплектация: ${equipment}\n\n` +
-                    `${basePriceText}\n`;
+    // Получаем название теплицы из базы данных и приводим к верхнему регистру
+    const baseName = selectedEntry.form_name.toUpperCase();
+    let cleanName;
+    // Если базовое название уже содержит ключевое слово (например, "ДОМИК"), используем его как есть,
+    // иначе дописываем выбранную форму из выпадающего списка.
+    if (containsFormKeyword(baseName, formKeywords)) {
+        cleanName = baseName;
+    } else {
+        const selectedForm = document.getElementById("form").value.toUpperCase();
+        cleanName = `ТЕПЛИЦА ${baseName} ${selectedForm}`;
+    }
 
-                if (assemblyText) {
-                    commercialOffer += `${assemblyText}\n`;
-                }
-                if (foundationText) {
-                    commercialOffer += `${foundationText}\n`;
-                }
-                if (additionalProductsText) {
-                    commercialOffer += `\nДополнительные товары:\n${additionalProductsText}\n`;
-                }
-                if (deliveryPrice > 0) {
-                    commercialOffer += `\nДоставка - ${formatPrice(deliveryPrice)} рублей\n`;
-                }
-                commercialOffer += `\nИтоговая стоимость - ${formatPrice(finalTotalPrice)} рублей`;
+    const frameValue = document.getElementById("frame").value.trim();
+    const widthValue = document.getElementById("width").value.trim();
+    const lengthValue = document.getElementById("length").value.trim();
+    const arcStepValue = document.getElementById("arcStep").value.trim();
+    const polycarbonateValue = document.getElementById("polycarbonate").value.trim();
 
-                // Выводим сформированное КП в textarea
-                document.getElementById("commercial-offer").value = commercialOffer;
-            }
+    // Формирование строки для каркаса с добавлением суффикса ", краб система"
+    let frameLine = `Каркас: ${frameValue}`;
+    if (frameValue) {
+        frameLine += `, краб система`;
+    }
+
+    // Формирование строки для поликарбоната
+    let polycarbonateLine = `Поликарбонат с УФ защитой: ${polycarbonateValue}`;
+    const polyNormalized = polycarbonateValue.replace(/\s+/g, "").toLowerCase();
+    if (polyNormalized !== "безполикарбоната") {
+        if (polyNormalized === "стандарт4мм") {
+            polycarbonateLine += `, 0.55 кг/м2`;
+        } else if (polyNormalized === "люкс4мм" || polyNormalized === "люкс4мм" || polyNormalized === "люкс4 мм") {
+            polycarbonateLine += `, 0.72 кг/м2`;
+        } else if (polyNormalized === "премиум6мм" || polyNormalized === "премиум6 мм") {
+            polycarbonateLine += `, 1.2 кг/м2`;
+        }
+    }
+
+    // Формирование итогового коммерческого предложения
+    let commercialOffer = `${cleanName}\n\n` +
+        `${frameLine}\n` +
+        `Ширина: ${widthValue} м\n` +
+        `Длина: ${lengthValue} м\n` +
+        `Высота: ${height}\n` +
+        `Шаг дуги: ${arcStepValue} м\n` +
+        `${polycarbonateLine}\n` +
+        `Снеговая нагрузка: ${snowLoadFinalText}\n` +
+        `Горизонтальные стяжки: ${horizontalTies}\n` +
+        `Комплектация: ${equipment}\n\n` +
+        `${basePriceText}\n`;
+
+    if (assemblyText) {
+        commercialOffer += `${assemblyText}\n`;
+    }
+    if (foundationText) {
+        commercialOffer += `${foundationText}\n`;
+    }
+    if (additionalProductsText) {
+        commercialOffer += `\nДополнительные товары:\n${additionalProductsText}\n`;
+    }
+    if (deliveryPrice > 0) {
+        commercialOffer += `\nДоставка - ${formatPrice(deliveryPrice)} рублей\n`;
+    }
+    commercialOffer += `\nИтоговая стоимость - ${formatPrice(finalTotalPrice)} рублей`;
+
+    // Вывод сформированного КП в textarea
+    document.getElementById("commercial-offer").value = commercialOffer;
+}
 
             // Функция копирования КП
             function copyCommercialOffer() {
