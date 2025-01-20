@@ -1062,39 +1062,47 @@ if (assemblyChecked) {
 
             // Функция формирования коммерческого предложения
 function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additionalProducts, additionalProductsCost, deliveryPrice, finalTotalPrice, selectedEntry, basePriceText, assemblyText, foundationText, additionalProductsText, snowLoadFinalText) {
-    // Массив ключевых слов, обозначающих форму теплицы
-    const formKeywords = [
-      "ПРЯМОСТЕННАЯ",
-      "АРОЧНАЯ",
-      "КАПЛЕВИДНАЯ",
-      "ДОМИК",
-      "ПРИСТЕННАЯ",
-      "МИТЛАЙДЕР",
-      "ПРОМЫШЛЕННАЯ",
-      "НАВЕС"
-    ];
-
-    // Функция для проверки, содержит ли название хотя бы одно ключевое слово
-    function containsFormKeyword(name, keywords) {
-      const upperName = name.toUpperCase();
-      return keywords.some(keyword => upperName.includes(keyword));
-    }
-
     // Извлечение дополнительных характеристик
     const height = selectedEntry.height ? selectedEntry.height : "Не указано";
     const horizontalTies = selectedEntry.horizontal_ties ? selectedEntry.horizontal_ties : "Не указано";
     const equipment = selectedEntry.equipment || "Не указано";
 
     // Получаем название теплицы из базы данных и приводим к верхнему регистру
-    const baseName = selectedEntry.form_name.toUpperCase();
-    let cleanName;
-    // Если базовое название уже содержит ключевое слово (например, "ДОМИК"), используем его как есть,
-    // иначе дописываем выбранную форму из выпадающего списка.
-    if (containsFormKeyword(baseName, formKeywords)) {
-        cleanName = baseName;
-    } else {
-        const selectedForm = document.getElementById("form").value.toUpperCase();
-        cleanName = `ТЕПЛИЦА ${baseName} ${selectedForm}`;
+    const baseName = selectedEntry.form_name.toUpperCase(); // например, "ДОМИК ЛЮКС 3М"
+    
+    // Выбранная форма (например, "ДОМИКОМ" или "АРОЧНАЯ")
+    const selectedForm = document.getElementById("form").value.toUpperCase();
+
+    // Массив ключевых слов, по которым определяется форма
+    const formSynonyms = [
+      "ДОМИК",
+      "АРОЧНАЯ",
+      "КАПЛЕВИДНАЯ",
+      "ПРИСТЕННАЯ",
+      "ПРЯМОСТЕННАЯ",
+      "МИТЛАЙДЕР",
+      "ПРОМЫШЛЕННАЯ",
+      "НАВЕС"
+    ];
+
+    // Функция, которая проверяет, содержится ли выбранная форма (или её синоним)
+    // в baseName. Если хотя бы одно ключевое слово из selectedForm совпадает с частью baseName, то дописывать не нужно.
+    function shouldAppendForm(baseName, selectedForm) {
+        // Пройдемся по ключевым словам
+        for (let i = 0; i < formSynonyms.length; i++) {
+            const key = formSynonyms[i];
+            // Если и baseName содержит это ключевое слово, и выбранная форма тоже содержит его, значит не нужно дописывать
+            if (baseName.includes(key) && selectedForm.includes(key)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Формируем итоговое название теплицы
+    let cleanName = baseName;
+    if (shouldAppendForm(baseName, selectedForm)) {
+        cleanName += ` ${selectedForm}`;
     }
 
     const frameValue = document.getElementById("frame").value.trim();
@@ -1109,13 +1117,13 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
         frameLine += `, краб система`;
     }
 
-    // Формирование строки для поликарбоната
+    // Формирование строки для поликарбоната с добавлением веса (если выбран вариант, отличный от "Без поликарбоната")
     let polycarbonateLine = `Поликарбонат с УФ защитой: ${polycarbonateValue}`;
     const polyNormalized = polycarbonateValue.replace(/\s+/g, "").toLowerCase();
     if (polyNormalized !== "безполикарбоната") {
         if (polyNormalized === "стандарт4мм") {
             polycarbonateLine += `, 0.55 кг/м2`;
-        } else if (polyNormalized === "люкс4мм" || polyNormalized === "люкс4мм" || polyNormalized === "люкс4 мм") {
+        } else if (polyNormalized === "люкс4мм" || polyNormalized === "люкс4 мм") {
             polycarbonateLine += `, 0.72 кг/м2`;
         } else if (polyNormalized === "премиум6мм" || polyNormalized === "премиум6 мм") {
             polycarbonateLine += `, 1.2 кг/м2`;
@@ -1149,7 +1157,7 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
     }
     commercialOffer += `\nИтоговая стоимость - ${formatPrice(finalTotalPrice)} рублей`;
 
-    // Вывод сформированного КП в textarea
+    // Выводим сформированное КП в textarea
     document.getElementById("commercial-offer").value = commercialOffer;
 }
 
