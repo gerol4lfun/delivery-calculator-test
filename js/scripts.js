@@ -14,8 +14,10 @@
             // Функция нормализации строк (убирает пробелы и приводит к нижнему регистру)
             function normalizeString(str) {
                 if (!str) return "";
-                return str.trim().toLowerCase().replace(/\s+/g, "");
+                // Заменяем обычные и неразрывные пробелы на пустую строку
+                return str.trim().toLowerCase().replace(/[\s\u00A0]+/g, "");
             }
+            
 
             // Пользователи
             const users = [
@@ -123,13 +125,13 @@ const deliveryRegions = [
             const additionalServicesData = {
                 "Брус": {
                     price_by_length: {
-                        4: 4790,
-                        6: 6290,
-                        8: 7790,
-                        10: 9290,
-                        12: 10790,
-                        14: 12290,
-                        16: 13790
+                        4: 5490,
+                        6: 6990,
+                        8: 8490,
+                        10: 9990,
+                        12: 11490,
+                        14: 12990,
+                        16: 14490
                     }
                 },
                 "Штыри": {
@@ -431,7 +433,10 @@ const deliveryRegions = [
                     console.error('Ошибка при получении данных по городу:', error);
                     return;
                 }
-
+                
+                console.log("📌 Данные из Supabase для города:", city);
+                console.table(data); // Покажет таблицу всех загруженных данных
+                
                 if (!data || data.length === 0) {
                     alert("Данные для выбранного города не найдены. Попробуйте другой город.");
                     return; // Остановить выполнение функции
@@ -611,29 +616,52 @@ const deliveryRegions = [
                 // Задаём порядок сортировки каркасов
                 const frameOrder = ["20х20", "40х20", "20х20+20х20", "40х20+20х20", "40х20+40х20"];
 
-                // Получаем уникальные значения каркаса
-                let uniqueFrames = [...new Set(filteredData.map(item => {
-                    let cleanDescription = item.frame_description.replace(/оцинкованная труба/gi, "").trim();
-                    // Ищем комбинации:
-                    const matches = cleanDescription.match(
-                        /(20х20\s*\+\s*20х20|40х20\s*\+\s*20х20|40х20\s*\+\s*40х20|20х20|40х20)/gi);
-                    return matches ? matches.join(",") : cleanDescription;
-                }))];
+              // Получаем уникальные значения каркаса
+let uniqueFrames = [...new Set(filteredData.map(item => {
+    // Отладочное логирование: вывод названия и исходного описания
+    console.log("Обрабатывается элемент:", item["Название"], "исходное описание:", item.frame_description);
+    
+    // Нормализуем описание: удаляем "оцинкованная труба" и "мм"
+    let cleanDescription = item.frame_description
+        .replace(/оцинкованная труба/gi, "")
+        .replace(/мм/gi, "")  // удаляем символы "мм"
+        .trim();
+    
+    // Убираем лишние пробелы вокруг знака "+"
+    cleanDescription = cleanDescription.replace(/\s*\+\s*/g, "+");
+    console.log("Нормализованное описание после правки:", cleanDescription);        
+    
+    // Если строка содержит "+", значит, это составной каркас – возвращаем её целиком
+    if (cleanDescription.includes('+')) {
+        console.log("Составной каркас обнаружен, возвращаем:", cleanDescription);
+        return cleanDescription;
+    }
+    
+    // Если нет знака "+", ищем простое совпадение для "20х20" или "40х20"
+    const matches = cleanDescription.match(/(20х20|40х20)/gi);
+    if (matches) {
+        console.log("Найденные совпадения:", matches);
+    } else {
+        console.log("Совпадений не найдено, возвращаем:", cleanDescription);
+    }
+    
+    return matches ? matches.join(",") : cleanDescription;
+}))];
 
-                uniqueFrames = [...new Set(uniqueFrames.flatMap(f => f.split(",")))];
+uniqueFrames = [...new Set(uniqueFrames.flatMap(f => f.split(",")))];
 
-                uniqueFrames.sort((a, b) => {
-                    const iA = frameOrder.indexOf(a.trim());
-                    const iB = frameOrder.indexOf(b.trim());
-                    if (iA === -1 && iB === -1) {
-                        return a.localeCompare(b);
-                    } else if (iA === -1) {
-                        return 1;
-                    } else if (iB === -1) {
-                        return -1;
-                    }
-                    return iA - iB;
-                });
+uniqueFrames.sort((a, b) => {
+    const iA = frameOrder.indexOf(a.trim());
+    const iB = frameOrder.indexOf(b.trim());
+    if (iA === -1 && iB === -1) {
+        return a.localeCompare(b);
+    } else if (iA === -1) {
+        return 1;
+    } else if (iB === -1) {
+        return -1;
+    }
+    return iA - iB;
+});
 
                 uniqueFrames.forEach(frame => {
                     frameSelect.innerHTML += `<option value="${frame.trim()}">${frame.trim()}</option>`;
