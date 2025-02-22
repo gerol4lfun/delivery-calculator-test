@@ -1,7 +1,7 @@
 
 // Константа для контроля отладки
 const DEBUG = false; // Отключено для продакшена
-const APP_VERSION = "v2"; // Обновите значение, если вносите критичные изменения (например, новые пароли)
+const APP_VERSION = "v3"; // Обновите значение, если вносите критичные изменения (например, новые пароли)
 
 /**
  * Функция форматирования чисел с точками
@@ -20,7 +20,7 @@ function normalizeString(str) {
 }
             
 
-            / Пользователи
+            // Пользователи
 const users = [
     { login: "admin", password: "Adm!nXr42#7G" },
     { login: "Manager1", password: "Mngr1@Lp9$Rt" },
@@ -328,19 +328,7 @@ function authenticate() {
         // Если пользователь найден, скрываем окно авторизации и показываем калькулятор
         authError.style.display = "none";
         localStorage.setItem('savedLogin', login); // Сохраняем логин
-        if (user) {
-            // Если пользователь найден, скрываем окно авторизации и показываем калькулятор
-            authError.style.display = "none";
-            localStorage.setItem('savedLogin', login); // Сохраняем логин
-            localStorage.setItem('appVersion', APP_VERSION); // Сохраняем версию приложения
-            document.getElementById("auth-container").classList.add("hidden");
-            document.getElementById("calculator-container").classList.remove("hidden");
-            initializeCalculator();
-        } else {
-            // Если пользователь не найден — показываем ошибку
-            authError.style.display = "block";
-        }
-
+        localStorage.setItem('appVersion', APP_VERSION); // Сохраняем версию приложения
         document.getElementById("auth-container").classList.add("hidden");
         document.getElementById("calculator-container").classList.remove("hidden");
         initializeCalculator();
@@ -349,6 +337,7 @@ function authenticate() {
         authError.style.display = "block";
     }
 }
+
 
 // Функция выхода
 function logout() {
