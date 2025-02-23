@@ -42,8 +42,8 @@ const formPriority = {
     "Прямостенная": 3,
     "Домиком": 4,
     "Пристенная": 5,
-    "Митлайдер арочная": 6,
-    "Митлайдер прямостенная": 7,
+    "Миттлайдер арочная": 6,
+    "Миттлайдер прямостенная": 7,
     "Промышленная прямостенная": 8,
     "Промышленная домиком": 9,
     "Навес": 10,
@@ -174,11 +174,11 @@ const assemblyPrices = {
         "2.5М": { 4: 5990, 6: 7990, 8: 9990, 10: 11990, 12: 13990 },
         "3М": { 4: 5990, 6: 7990, 8: 9990, 10: 11990, 12: 13990 }
     },
-    "Митлайдер арочная": {
+    "Миттлайдер арочная": {
         "3М": { 4: 7990, 6: 11490, 8: 14990, 10: 18490, 12: 22490 },
         "3.5М": { 4: 7990, 6: 11490, 8: 14990, 10: 18490, 12: 22490 }
     },
-    "Митлайдер прямостенная": {
+    "Миттлайдер прямостенная": {
         "3М": { 4: 7990, 6: 11490, 8: 14990, 10: 18490, 12: 22490 },
         "3.5М": { 4: 7990, 6: 11490, 8: 14990, 10: 18490, 12: 22490 }
     },
@@ -243,15 +243,15 @@ const availableForms = {
         { name: "ТЕПЛИЦА ПРИСТЕННАЯ ПРЕМИУМ 2.5М", frame: "40х20+20х20" },
         { name: "ТЕПЛИЦА ПРИСТЕННАЯ ПРЕМИУМ 3М", frame: "40х20+20х20" }
     ],
-    "Митлайдер арочная": [
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ЛЮКС 3М", frame: "40х20" },
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ЛЮКС 3.5М", frame: "40х20" },
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ПРЕМИУМ 3М", frame: "40х20+20х20" },
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ПРЕМИУМ 3.5М", frame: "40х20+20х20" }
+    "Миттлайдер арочная": [
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ЛЮКС 3М", frame: "40х20" },
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ЛЮКС 3.5М", frame: "40х20" },
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ПРЕМИУМ 3М", frame: "40х20+20х20" },
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ПРЕМИУМ 3.5М", frame: "40х20+20х20" }
     ],
-    "Митлайдер прямостенная": [
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ЭЛИТ 3М", frame: "40х20+20х20" },
-        { name: "ТЕПЛИЦА МИТЛАЙДЕР ЭЛИТ 3.5М", frame: "40х20+20х20" }
+    "Миттлайдер прямостенная": [
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ЭЛИТ 3М", frame: "40х20+20х20" },
+        { name: "ТЕПЛИЦА МИТТЛАЙДЕР ЭЛИТ 3.5М", frame: "40х20+20х20" }
     ],
     "Промышленная прямостенная": [
         { name: "ТЕПЛИЦА ПРЕМЬЕР ПРЕМИУМ 5М", frame: "40х20+40х20" },
@@ -620,36 +620,40 @@ function onLengthChange() {
     const frameOrder = ["20х20", "40х20", "20х20+20х20", "40х20+20х20", "40х20+40х20"];
 
     // Получаем уникальные значения каркаса
-    let uniqueFrames = [...new Set(filteredData.map(item => {
-        // Отладочное логирование: вывод названия и исходного описания
-        console.log("Обрабатывается элемент:", item["Название"], "исходное описание:", item.frame_description);
+let uniqueFrames = [...new Set(filteredData.map(item => {
+    // Отладочное логирование: вывод названия и исходного описания
+    console.log("Обрабатывается элемент:", item["Название"], "исходное описание:", item.frame_description);
 
-        // Нормализуем описание: удаляем "оцинкованная труба" и "мм"
-        let cleanDescription = item.frame_description
-            .replace(/оцинкованная труба/gi, "")
-            .replace(/мм/gi, "")  // удаляем символы "мм"
-            .trim();
+    // Нормализуем описание:
+    // 1. Удаляем слово "двойная" (с любыми пробелами после него)
+    // 2. Удаляем "оцинкованная труба" (без учета регистра)
+    // 3. Удаляем символы "мм"
+    let cleanDescription = item.frame_description
+        .replace(/двойная\s*/gi, "")  // добавлено удаление слова "двойная"
+        .replace(/оцинкованная труба/gi, "")
+        .replace(/мм/gi, "")
+        .trim();
 
-        // Убираем лишние пробелы вокруг знака "+"
-        cleanDescription = cleanDescription.replace(/\s*\+\s*/g, "+");
-        console.log("Нормализованное описание после правки:", cleanDescription);
+    // Убираем лишние пробелы вокруг знака "+"
+    cleanDescription = cleanDescription.replace(/\s*\+\s*/g, "+");
+    console.log("Нормализованное описание после правки:", cleanDescription);
 
-        // Если строка содержит "+", значит, это составной каркас – возвращаем её целиком
-        if (cleanDescription.includes('+')) {
-            console.log("Составной каркас обнаружен, возвращаем:", cleanDescription);
-            return cleanDescription;
-        }
+    // Если строка содержит "+", значит, это составной каркас – возвращаем её целиком
+    if (cleanDescription.includes('+')) {
+        console.log("Составной каркас обнаружен, возвращаем:", cleanDescription);
+        return cleanDescription;
+    }
 
-        // Если нет знака "+", ищем простое совпадение для "20х20" или "40х20"
-        const matches = cleanDescription.match(/(20х20|40х20)/gi);
-        if (matches) {
-            console.log("Найденные совпадения:", matches);
-        } else {
-            console.log("Совпадений не найдено, возвращаем:", cleanDescription);
-        }
+    // Если нет знака "+", ищем простое совпадение для "20х20" или "40х20"
+    const matches = cleanDescription.match(/(20х20|40х20)/gi);
+    if (matches) {
+        console.log("Найденные совпадения:", matches);
+    } else {
+        console.log("Совпадений не найдено, возвращаем:", cleanDescription);
+    }
 
-        return matches ? matches.join(",") : cleanDescription;
-    }))];
+    return matches ? matches.join(",") : cleanDescription;
+}))];
 
     uniqueFrames = [...new Set(uniqueFrames.flatMap(f => f.split(",")))];
 
@@ -775,7 +779,7 @@ async function calculateGreenhouseCost(event = null) {
             getFormCategory(item.form_name) === form &&
             parseFloat(item.width) === width &&
             parseFloat(item.length) === length &&
-            normalizeString(item.frame_description).includes(normalizeString(frame)) &&
+            normalizeString(item.frame_description.replace(/двойная\s*/gi, "")).includes(normalizeString(frame)) &&
             normalizeString(item.polycarbonate_type) === normalizeString(polycarbonate)
         );
     });
@@ -1111,7 +1115,7 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
         "КАПЛЕВИДНАЯ",
         "ПРИСТЕННАЯ",
         "ПРЯМОСТЕННАЯ",
-        "МИТЛАЙДЕР",
+        "МИТТЛАЙДЕР",
         "ПРОМЫШЛЕННАЯ",
         "НАВЕС"
     ];
