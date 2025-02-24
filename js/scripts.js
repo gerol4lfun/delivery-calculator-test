@@ -818,7 +818,7 @@ async function calculateGreenhouseCost(event = null) {
 
     // 3) Шаг дуг 0.65 м => +25% к нагрузке, + добавка к basePrice
     if (arcStep === 0.65) {
-        // Находим базовую цену для "Стандарт 4 мм" с учётом возможных вариантов написания
+        // Находим базовую цену для "Стандарт 4мм" с учётом возможных вариантов написания
         const baseEntry = currentCityData.find(item => {
             return (
                 getFormCategory(item.form_name) === form &&
@@ -1059,12 +1059,17 @@ async function calculateDelivery() {
             document.getElementById('result').innerText = "Ошибка: ближайший город не найден.";
             return;
         }
-
+        
         mapInstance.setCenter(nearestCity.coords, 7);
-
+        
+        // Автоматически установить найденный город в выпадающем списке "Город"
+        document.getElementById('city').value = nearestCity.name;
+        // Обновить остальные параметры на основе выбранного города
+        onCityChange();
+        
         if (currentRoute) {
             mapInstance.geoObjects.remove(currentRoute);
-        }
+        }        
 
         try {
             const route = await ymaps.route([nearestCity.coords, [destinationLat, destinationLon]]);
