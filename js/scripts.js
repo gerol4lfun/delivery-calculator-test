@@ -818,7 +818,7 @@ async function calculateGreenhouseCost(event = null) {
 
     // 3) Шаг дуг 0.65 м => +25% к нагрузке, + добавка к basePrice
     if (arcStep === 0.65) {
-        // Находим базовую цену для "Стандарт 4 мм" с учётом возможных вариаций написания
+        // Находим базовую цену для "Стандарт 4 мм" с учётом возможных вариантов написания
         const baseEntry = currentCityData.find(item => {
             return (
                 getFormCategory(item.form_name) === form &&
