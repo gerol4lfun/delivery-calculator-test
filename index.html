@@ -122,12 +122,16 @@
         </div>
         
         <!-- Блок "Монтаж на фундамент клиента" -->
-        <p class="centered-heading"><strong>Монтаж на фундамент клиента</strong></p>
-        <!-- Вертикальная группа для чекбоксов монтажа -->
-        <div class="checkbox-group-large">
-          <label><input type="checkbox"> На брус 1.500&nbsp;рублей</label>
-          <label><input type="checkbox"> На бетон 2.000&nbsp;рублей</label>
-        </div>
+<p class="centered-heading"><strong>Монтаж на фундамент клиента</strong></p>
+<!-- Вертикальная группа для чекбоксов монтажа -->
+<div class="checkbox-group-large">
+  <label>
+    <input type="checkbox" id="on-wood" data-price="1500" onchange="calculateGreenhouseCost()"> На брус 1.500&nbsp;рублей
+  </label>
+  <label>
+    <input type="checkbox" id="on-concrete" data-price="2000" onchange="calculateGreenhouseCost()"> На бетон 2.000&nbsp;рублей
+  </label>
+</div>
         
         <!-- Блок "Дополнительные товары" остается внутри блока -->
         <div class="additional-products">
