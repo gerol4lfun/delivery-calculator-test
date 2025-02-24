@@ -1063,37 +1063,34 @@ async function calculateDelivery() {
         mapInstance.setCenter(nearestCity.coords, 7);
         
         // Автоматически установить найденный город в выпадающем списке "Город"
-        document.getElementById('city').value = nearestCity.name;
-        // Обновить остальные параметры на основе выбранного города
+        const citySelect = document.getElementById('city');
+        let found = false;
+        for (let i = 0; i < citySelect.options.length; i++) {
+            // Сравниваем значение опции и nearestCity.name, убирая лишние пробелы и приводя к нижнему регистру
+            if (citySelect.options[i].value.trim().toLowerCase() === nearestCity.name.trim().toLowerCase()) {
+                 citySelect.selectedIndex = i;
+                 found = true;
+                 break;
+            }
+        }
+        if (!found) {
+            console.warn("Ближайший город не найден в списке опций");
+        }
+        
+        // Обновляем остальные параметры, основываясь на выбранном городе
         onCityChange();
         
         if (currentRoute) {
             mapInstance.geoObjects.remove(currentRoute);
-        }        
-
+        }
+        
         try {
             const route = await ymaps.route([nearestCity.coords, [destinationLat, destinationLon]]);
             currentRoute = route;
             mapInstance.geoObjects.add(route);
-
-            const distanceInKm = route.getLength() / 1000;
-            const distanceFromBoundary = Math.max(distanceInKm - nearestCity.boundaryDistance, 0);
-
-            let cost;
-            if (deliveryType === "withoutAssembly") {
-                cost = Math.max(1000, 500 + 40 * distanceFromBoundary);
-            } else {
-                cost = Math.max(1000, 40 * distanceFromBoundary);
-            }
-
-            const roundedCost = Math.ceil(cost / 50) * 50;
-
-            deliveryCost = roundedCost; // сохраняем стоимость доставки в глобальной переменной
-
-            document.getElementById('result').innerText = `Стоимость доставки: ${formatPrice(roundedCost)} рублей (${nearestCity.name})`;
         } catch (routeError) {
             document.getElementById('result').innerText = "Ошибка при расчёте маршрута.";
-        }
+        }        
 
     } catch (geocodeError) {
         document.getElementById('result').innerText = "Ошибка при расчёте. Попробуйте снова.";
