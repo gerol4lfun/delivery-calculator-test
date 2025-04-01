@@ -1,7 +1,7 @@
 
 // Константа для контроля отладки
 const DEBUG = false; // Отключено для продакшена
-const APP_VERSION = "v3"; // Обновите значение, если вносите критичные изменения (например, новые пароли)
+const APP_VERSION = "v4"; // Обновите значение, если вносите критичные изменения (например, новые пароли)
 
 /**
  * Функция форматирования чисел с точками
@@ -22,17 +22,16 @@ function normalizeString(str) {
 
 // Пользователи
 const users = [
-    { login: "admin", password: "Adm!nXr42#7G" },
-    { login: "Manager1", password: "Mngr1@Lp9$Rt" },
-    { login: "Manager2", password: "Mngr2#Qs8&Xy" },
-    { login: "Manager3", password: "Mngr3!Zp7*Wk" },
-    { login: "Manager4", password: "Mngr4@Yt6$Vd" },
-    { login: "Manager5", password: "Mngr5#Kf5&Jh" },
-    { login: "Manager6", password: "Mngr6!Bn4*Zq" },
-    { login: "Manager7", password: "Mngr7@Wm3$Xp" },
-    { login: "Manager8", password: "Mngr8#Cd2&Nv" },
-    { login: "Manager9", password: "Mngr9!Xk1*Gy" },
-    { login: "Manager10", password: "Mngr10@Vt0$Qp" }
+    { login: "admin",      password: "NewAdmPassword123!" },
+    { login: "Юлия",       password: "NewYuliaPass456!" },
+    { login: "Руслан",     password: "NewRuslanPass789!" },
+    { login: "Ольга",      password: "NewOlgaPass321!" },
+    { login: "Екатерина",  password: "NewEkaterinaPass654!" },
+    { login: "Manager6",   password: "NewManager6Pass987!" },
+    { login: "Manager7",   password: "NewManager7Pass135!" },
+    { login: "Manager8",   password: "NewManager8Pass246!" },
+    { login: "Manager9",   password: "NewManager9Pass369!" },
+    { login: "Manager10",  password: "NewManager10Pass147!" }
 ];
 
 // Приоритеты форм (чем меньше число, тем выше в списке)
