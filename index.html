@@ -133,67 +133,106 @@
   </label>
 </div>
         
-        <!-- Блок "Дополнительные товары" остается внутри блока -->
-        <div class="additional-products">
-          <h3>Дополнительные товары:</h3>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="drip-irrigation-mech" data-price="1690" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Капельный полив механический</span>
-              <span class="price">1.690 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="drip-irrigation-auto" data-price="4490" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Капельный полив автоматический</span>
-              <span class="price">4.490 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="window-automation" data-price="2590" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Автомат для форточки</span>
-              <span class="price">2.590 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="galvanized-tape-30m" data-price="1990" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Оцинкованная лента 30 м</span>
-              <span class="price">1.990 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="vapor-permeable-tape-25m" data-price="1590" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Паропропускная лента 25 м</span>
-              <span class="price">1.590 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="additional-window" data-price="1490" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Дополнительная форточка</span>
-              <span class="price">1.490 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="additional-partition" data-price="5490" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Дополнительная перегородка</span>
-              <span class="price">5.490 рублей</span>
-            </label>
-          </div>
-          <div class="product-item">
-            <label class="product-label">
-              <input type="checkbox" id="additional-partition-door" data-price="6990" onchange="calculateGreenhouseCost()">
-              <span class="product-name">Дополнительная перегородка с дверью</span>
-              <span class="price">6.990 рублей</span>
-            </label>
-          </div>
-        </div>
-      </div>
+<div class="additional-products">
+  <h3>Дополнительные товары:</h3>
+
+  <!-- 1) Капельный полив механический -->
+  <div class="product-item">
+    <label class="product-label">
+      <!-- Выпадающий список вместо чекбокса -->
+      <select id="drip-irrigation-mech-qty" data-price="1690" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Капельный полив механический</span>
+      <span class="price">1.690 рублей</span>
+    </label>
+  </div>
+
+  <!-- 2) Капельный полив автоматический -->
+  <div class="product-item">
+    <label class="product-label">
+      <select id="drip-irrigation-auto-qty" data-price="4490" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Капельный полив автоматический</span>
+      <span class="price">4.490 рублей</span>
+    </label>
+  </div>
+
+  <!-- 3) Автомат для форточки -->
+  <div class="product-item">
+    <label class="product-label">
+      <select id="window-automation-qty" data-price="2590" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Автомат для форточки</span>
+      <span class="price">2.590 рублей</span>
+    </label>
+  </div>
+
+  <!-- 4) Дополнительная форточка -->
+  <div class="product-item">
+    <label class="product-label">
+      <select id="additional-window-qty" data-price="1490" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Дополнительная форточка</span>
+      <span class="price">1.490 рублей</span>
+    </label>
+  </div>
+
+  <!-- 5) Оцинкованная лента 30 м -->
+  <div class="product-item">
+    <label class="product-label">
+      <select id="galvanized-tape-30m-qty" data-price="1990" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Оцинкованная лента 30 м</span>
+      <span class="price">1.990 рублей</span>
+    </label>
+  </div>
+
+  <!-- 6) Паропропускная лента 25 м -->
+  <div class="product-item">
+    <label class="product-label">
+      <select id="vapor-permeable-tape-25m-qty" data-price="1590" onchange="calculateGreenhouseCost()">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span class="product-name">Паропропускная лента 25 м</span>
+      <span class="price">1.590 рублей</span>
+    </label>
+  </div>
+</div>
 
       <!-- Блок1 коммерческого предложения -->
       <div class="block">

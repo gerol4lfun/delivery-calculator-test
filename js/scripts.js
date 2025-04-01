@@ -943,25 +943,41 @@ async function calculateGreenhouseCost(event = null) {
         }
     }
 
-    // Дополнительные товары
-    const additionalProducts = [];
-    const productCheckboxes = document.querySelectorAll('.additional-products input[type="checkbox"]');
-    productCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            const productNameElement = checkbox.parentElement.querySelector('.product-name');
-            const productName = productNameElement ? productNameElement.textContent.trim() : checkbox.parentElement.textContent.split(' +')[0].trim();
-            const productPrice = parseFloat(checkbox.getAttribute('data-price'));
-            if (!isNaN(productPrice) && productPrice > 0) { // Добавлена проверка на положительную стоимость
-                additionalProducts.push({ name: productName, cost: productPrice });
-                additionalProductsCost += productPrice;
-            }
+    // Дополнительные товары (новая логика с выбором количества через select)
+const additionalProducts = [];
+const productSelects = document.querySelectorAll('.additional-products .product-item select');
+productSelects.forEach(select => {
+    const quantity = parseInt(select.value, 10);
+    if (quantity > 0) {
+        // Получаем название товара
+        const productNameElement = select.parentElement.querySelector('.product-name');
+        const productName = productNameElement ? productNameElement.textContent.trim() : "";
+        // Если нужно исключить товары типа "перегородка", можно добавить проверку:
+        if (productName.toLowerCase().includes("перегородка")) {
+            return;
         }
-    });
-
-    // Формируем текст дополнительных товаров
-    if (additionalProducts.length > 0) {
-        additionalProductsText = additionalProducts.map(product => `${product.name} - ${formatPrice(product.cost)} рублей`).join('\n');
+        const productPrice = parseFloat(select.getAttribute('data-price'));
+        if (!isNaN(productPrice) && productPrice > 0) {
+            additionalProducts.push({ 
+                name: productName, 
+                cost: productPrice * quantity,
+                quantity: quantity 
+            });
+            additionalProductsCost += productPrice * quantity;
+        }
     }
+});
+
+    // Формируем текст дополнительных товаров с указанием количества, если больше 1
+if (additionalProducts.length > 0) {
+    additionalProductsText = additionalProducts.map(product => {
+        if (product.quantity > 1) {
+            return `${product.name} x ${product.quantity} - ${formatPrice(product.cost)} рублей`;
+        } else {
+            return `${product.name} - ${formatPrice(product.cost)} рублей`;
+        }
+    }).join('\n');
+}
 
     // Итоговая стоимость (без доставки)
     finalTotalPrice = basePrice + assemblyCost + foundationCost + additionalProductsCost;
