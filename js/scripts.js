@@ -19,6 +19,41 @@ function normalizeString(str) {
     return str.trim().toLowerCase().replace(/[\s\u00A0]+/g, "");
 }
 
+// Функция нормализации названий городов (заменяет Ё на Е для сравнения)
+function normalizeCityName(cityName) {
+    if (!cityName) return "";
+    return cityName.trim().toLowerCase().replace(/ё/g, "е").replace(/Ё/g, "Е");
+}
+
+// Функция поиска города в выпадающем списке по нормализованному названию
+function findCityInDropdown(cityName) {
+    if (!cityName) return null;
+    const cityDropdown = document.getElementById('city');
+    if (!cityDropdown || !cityDropdown.options) return null;
+    
+    const normalizedTarget = normalizeCityName(cityName);
+    
+    // Ищем точное совпадение по нормализованному названию
+    for (let i = 0; i < cityDropdown.options.length; i++) {
+        const option = cityDropdown.options[i];
+        if (option.value && normalizeCityName(option.value) === normalizedTarget) {
+            return option.value; // Возвращаем оригинальное название из списка
+        }
+    }
+    
+    // Если точного совпадения нет, ищем частичное (для "Набережные Челны" vs "Челны")
+    for (let i = 0; i < cityDropdown.options.length; i++) {
+        const option = cityDropdown.options[i];
+        if (option.value) {
+            const normalizedOption = normalizeCityName(option.value);
+            if (normalizedTarget.includes(normalizedOption) || normalizedOption.includes(normalizedTarget)) {
+                return option.value;
+            }
+        }
+    }
+    
+    return null;
+}
 
 // Пользователи (СТАРАЯ СИСТЕМА УДАЛЕНА - больше не используется!)
 // ВСЕ пароли теперь хранятся ТОЛЬКО в Supabase в таблице users
@@ -351,9 +386,9 @@ async function authenticate() {
 
         // Проверяем, не админ ли это (для доступа к админ-панели)
         // Важно: проверяем точно как 'admin' (без toLowerCase, так как в базе может быть другой регистр)
-        if (login === 'admin' || login.toLowerCase() === 'admin') {
+        // СТРОГАЯ проверка: только пользователь с логином точно "admin"
+        if (login && login.trim().toLowerCase() === 'admin') {
             localStorage.setItem(ADMIN_KEY, 'true');
-            console.log("Админ вошёл в систему, доступ к админ-панели разрешён");
         } else {
             localStorage.removeItem(ADMIN_KEY);
         }
@@ -370,10 +405,8 @@ async function authenticate() {
 
 // Функция выхода
 function logout() {
-    console.log("=== Выход из системы ===");
     try {
         const savedLogin = localStorage.getItem('savedLogin');
-        console.log("Выход пользователя:", savedLogin);
         
         localStorage.removeItem('savedLogin');
         localStorage.removeItem('passwordVersion');
@@ -424,7 +457,6 @@ function logout() {
             mapInstance.geoObjects.remove(currentRoute);
         }
         
-        console.log("✅ Выход выполнен");
     } catch (error) {
         console.error("❌ Ошибка при выходе:", error);
         // Принудительная очистка localStorage и перезагрузка
@@ -450,25 +482,51 @@ async function checkPasswordVersion() {
             .single();
 
         if (error || !data) {
-            // Если пользователь не найден в Supabase - разлогиниваем
+            // Если это сетевая ошибка - НЕ разлогиниваем, продолжаем работу
+            if (isNetworkError(error)) {
+                console.error("Ошибка сети при проверке версии пароля (возможно блокировка Supabase). Продолжаем работу.");
+                return true; // Продолжаем работу при сетевых ошибках
+            }
+            // Другие ошибки (пользователь не найден) - разлогиниваем
             console.error("Пользователь не найден в Supabase при проверке версии:", error);
             logout();
-            alert("Ошибка проверки аккаунта. Пожалуйста, войдите снова.");
             return false;
         }
 
         // Если пользователь деактивирован или версия пароля не совпадает - выход
         if (!data.is_active || data.password_version.toString() !== savedPasswordVersion) {
             logout();
-            alert("Сессия истекла. Пожалуйста, войдите снова.");
+            // Показываем alert только если версия пароля реально изменилась (пароль был изменён)
+            if (data.password_version.toString() !== savedPasswordVersion) {
+                alert("Сессия истекла. Пожалуйста, войдите снова.");
+            }
             return false;
         }
 
         return true;
     } catch (err) {
+        // Если ошибка сети - продолжаем работу, не разлогиниваем
+        if (isNetworkError(err)) {
+            console.error("Ошибка сети при проверке версии пароля. Продолжаем работу.");
+            return true; // Продолжаем работу при сетевых ошибках
+        }
         console.error("Ошибка при проверке версии пароля:", err);
-        return false;
+        return true; // Даже при других ошибках продолжаем работу (менее агрессивно)
     }
+}
+
+// Функция проверки сетевых ошибок
+function isNetworkError(error) {
+    if (!error) return false;
+    const errorStr = JSON.stringify(error).toLowerCase();
+    return errorStr.includes('load failed') || 
+           errorStr.includes('network') || 
+           errorStr.includes('timeout') ||
+           errorStr.includes('err_network_changed') ||
+           errorStr.includes('err_name_not_resolved') ||
+           errorStr.includes('failed to fetch') ||
+           errorStr.includes('networkerror') ||
+           (error.message && error.message.toLowerCase().includes('failed to fetch'));
 }
 
 // Функция для загрузки городов из Supabase с учётом пагинации
@@ -547,9 +605,6 @@ async function onCityChange() {
         console.error('Ошибка при получении данных по городу:', error);
         return;
     }
-
-    console.log("📌 Данные из Supabase для города:", city);
-    console.table(data); // Покажет таблицу всех загруженных данных
 
     if (!data || data.length === 0) {
         alert("Данные для выбранного города не найдены. Попробуйте другой город.");
@@ -733,7 +788,6 @@ function onLengthChange() {
     // Получаем уникальные значения каркаса
     let uniqueFrames = [...new Set(filteredData.map(item => {
         // Отладочное логирование: вывод названия и исходного описания
-        console.log("Обрабатывается элемент:", item["Название"], "исходное описание:", item.frame_description);
 
         // Нормализуем описание:
         // 1. Удаляем слово "двойная" (с любыми пробелами после него)
@@ -747,20 +801,15 @@ function onLengthChange() {
 
         // Убираем лишние пробелы вокруг знака "+"
         cleanDescription = cleanDescription.replace(/\s*\+\s*/g, "+");
-        console.log("Нормализованное описание после правки:", cleanDescription);
 
         // Если строка содержит "+", значит, это составной каркас – возвращаем её целиком
         if (cleanDescription.includes('+')) {
-            console.log("Составной каркас обнаружен, возвращаем:", cleanDescription);
             return cleanDescription;
         }
 
         // Если нет знака "+", ищем простое совпадение для "20х20" или "40х20"
         const matches = cleanDescription.match(/(20х20|40х20)/gi);
         if (matches) {
-            console.log("Найденные совпадения:", matches);
-        } else {
-            console.log("Совпадений не найдено, возвращаем:", cleanDescription);
         }
 
         return matches ? matches.join(",") : cleanDescription;
@@ -1148,9 +1197,6 @@ async function calculateDelivery() {
         let localities = geoObject.getLocalities().map(loc => loc.toLowerCase());
         let administrativeAreas = geoObject.getAdministrativeAreas().map(area => area.toLowerCase());
 
-        // Для отладки: выводим полученные данные
-        console.log("Localities:", localities);
-        console.log("Administrative Areas:", administrativeAreas);
 
         // Проверяем, содержит ли хотя бы одно ключевое слово из массива deliveryRegions
         // любое слово из localities или administrativeAreas
@@ -1209,9 +1255,25 @@ if (!nearestCity) {
         mapInstance.setCenter(nearestCity.coords, 7);
 
         // Автоматически установить найденный город в выпадающем списке "Город"
-        document.getElementById('city').value = nearestCity.name;
-        // Обновить остальные параметры на основе выбранного города
-        onCityChange();
+        // Используем нормализованное сравнение для поиска правильного названия
+        const cityDropdown = document.getElementById('city');
+        const foundCityName = findCityInDropdown(nearestCity.name);
+        
+        if (foundCityName) {
+            cityDropdown.value = foundCityName;
+            onCityChange();
+        } else {
+            // Если не найдено, пытаемся установить напрямую
+            cityDropdown.value = nearestCity.name;
+            // Пробуем снова через небольшую задержку (на случай, если список ещё загружается)
+            setTimeout(() => {
+                const foundAfterDelay = findCityInDropdown(nearestCity.name);
+                if (foundAfterDelay) {
+                    cityDropdown.value = foundAfterDelay;
+                    onCityChange();
+                }
+            }, 300);
+        }
 
         if (currentRoute) {
             mapInstance.geoObjects.remove(currentRoute);
@@ -1400,19 +1462,15 @@ function resetDelivery() {
 
 // Инициализация при загрузке страницы
 window.onload = async function () {
-    console.log("=== Инициализация страницы v2 ===");
-    
     if (localStorage.getItem('appVersion') !== APP_VERSION) {
         localStorage.clear();
     }
     const savedLogin = localStorage.getItem('savedLogin');
-    console.log("Сохранённый логин:", savedLogin);
     
     if (savedLogin) {
         // Убеждаемся, что admin флаг установлен, если это admin (ДО проверки пароля)
         if (savedLogin === 'admin' || savedLogin.toLowerCase() === 'admin') {
             localStorage.setItem(ADMIN_KEY, 'true');
-            console.log("✅ Admin обнаружен при загрузке, флаг установлен ПЕРЕД проверкой");
         }
         
         // Проверяем актуальность версии пароля
@@ -1430,16 +1488,17 @@ window.onload = async function () {
             document.getElementById("login").value = savedLogin;
         }
     } else {
-        console.log("Пользователь не залогинен");
     }
     
-    // Периодическая проверка версии пароля каждые 30 секунд
+    // Периодическая проверка версии пароля каждые 5 минут (увеличено с 30 секунд)
+    // Проверка только если страница видна и пользователь залогинен
     setInterval(async () => {
         const savedLogin = localStorage.getItem('savedLogin');
-        if (savedLogin && document.getElementById("calculator-container").classList.contains("hidden") === false) {
+        if (savedLogin && document.getElementById("calculator-container") && !document.getElementById("calculator-container").classList.contains("hidden")) {
+            // Тихо проверяем версию пароля (не разлогиниваем при сетевых ошибках)
             await checkPasswordVersion();
         }
-    }, 30000); // Проверка каждые 30 секунд
+    }, 300000); // Проверка каждые 5 минут (300000 мс) вместо 30 секунд
     
     // Принудительная проверка кнопки админа через 1 секунду (на случай задержки)
     setTimeout(() => {
@@ -1450,7 +1509,6 @@ window.onload = async function () {
                 adminBtn.classList.remove('hidden');
                 adminBtn.style.display = 'block';
                 adminBtn.style.visibility = 'visible';
-                console.log("✅ Принудительное отображение кнопки админа");
             } else {
                 console.error("❌ Кнопка admin-button всё ещё не найдена после задержки");
             }
@@ -1468,63 +1526,35 @@ async function initializeCalculator() {
     
     // Проверяем права админа и показываем/скрываем кнопку админ-панели
     const savedLogin = localStorage.getItem('savedLogin');
-    console.log("=== Проверка прав админа ===");
-    console.log("Логин из localStorage:", savedLogin);
-    console.log("ADMIN_KEY значение:", localStorage.getItem(ADMIN_KEY));
     
-    // Проверяем, является ли пользователь админом
-    const isAdminKey = localStorage.getItem(ADMIN_KEY) === 'true';
-    const isAdminByLogin = savedLogin && (savedLogin === 'admin' || savedLogin.toLowerCase() === 'admin');
-    const isAdmin = isAdminKey || isAdminByLogin;
-    
-    console.log("isAdminKey:", isAdminKey);
-    console.log("isAdminByLogin:", isAdminByLogin);
-    console.log("Итоговый isAdmin:", isAdmin);
+    // СТРОГАЯ проверка: только пользователь с логином точно "admin" (без пробелов, без регистра)
+    const isAdmin = savedLogin && savedLogin.trim().toLowerCase() === 'admin';
     
     // Если это админ, но флаг не установлен - устанавливаем
     if (isAdmin && localStorage.getItem(ADMIN_KEY) !== 'true') {
         localStorage.setItem(ADMIN_KEY, 'true');
-        console.log("✅ Флаг админа установлен");
+    }
+    
+    // Если это НЕ админ, обязательно удаляем флаг
+    if (!isAdmin) {
+        localStorage.removeItem(ADMIN_KEY);
     }
     
     // Даём немного времени на рендеринг DOM
     await new Promise(resolve => setTimeout(resolve, 100));
     
     const adminButton = document.getElementById("admin-button");
-    console.log("admin-button элемент:", adminButton);
     
     if (adminButton) {
         if (isAdmin) {
             adminButton.classList.remove("hidden");
             adminButton.style.display = "block";
             adminButton.style.visibility = "visible";
-            console.log("✅ Кнопка админ-панели ПОКАЗАНА для пользователя:", savedLogin);
-            console.log("Проверка класса hidden:", adminButton.classList.contains('hidden'));
             await loadUsersForAdmin(); // Загружаем список пользователей для админ-панели
         } else {
             adminButton.classList.add("hidden");
             adminButton.style.display = "none";
-            console.log("❌ Кнопка админ-панели СКРЫТА для пользователя:", savedLogin);
-        }
-    } else {
-        console.error("❌ Кнопка admin-button НЕ НАЙДЕНА в DOM!");
-        // Попробуем найти через querySelector
-        const foundBtn = document.querySelector('#admin-button');
-        console.error("Попытка найти через querySelector:", foundBtn);
-        
-        // Если не найдена, попробуем создать динамически
-        if (!foundBtn && isAdmin) {
-            console.log("⚠️ Пытаемся создать кнопку динамически...");
-            const container = document.querySelector('.calculator-container .container');
-            if (container) {
-                const newBtn = document.createElement('button');
-                newBtn.id = 'admin-button';
-                newBtn.className = 'admin-button';
-                newBtn.textContent = 'Админ-панель';
-                newBtn.onclick = toggleAdminPanel;
-                container.insertBefore(newBtn, container.firstChild.nextSibling);
-                console.log("✅ Кнопка создана динамически");
-            }
+            adminButton.style.visibility = "hidden";
         }
     }
 }
