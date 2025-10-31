@@ -26,6 +26,35 @@
   <div class="calculator-container hidden" id="calculator-container">
     <div class="container">
       <button class="logout" onclick="logout()">Выйти</button>
+      <button class="admin-button hidden" id="admin-button" onclick="toggleAdminPanel()">Админ-панель</button>
+      
+      <!-- Админ-панель для управления паролями -->
+      <div class="admin-panel hidden" id="admin-panel">
+        <h2>Управление паролями</h2>
+        <div class="admin-content">
+          <p class="admin-info">Выберите пользователя и введите новый пароль. После изменения пароля все пользователи будут разлогинены.</p>
+          
+          <div class="admin-form">
+            <label for="admin-user-select">Пользователь:</label>
+            <select id="admin-user-select">
+              <option value="" disabled selected>Выберите пользователя</option>
+            </select>
+            
+            <label for="admin-new-password">Новый пароль:</label>
+            <input type="password" id="admin-new-password" placeholder="Введите новый пароль">
+            
+            <label for="admin-confirm-password">Подтвердите пароль:</label>
+            <input type="password" id="admin-confirm-password" placeholder="Подтвердите пароль">
+            
+            <div class="btn-group">
+              <button class="blue-button" onclick="changeUserPassword()">Изменить пароль</button>
+              <button class="reset-button" onclick="toggleAdminPanel()">Закрыть</button>
+            </div>
+            
+            <div id="admin-message" class="admin-message"></div>
+          </div>
+        </div>
+      </div>
       
       <!-- Блок доставки -->
       <div class="block">
@@ -244,7 +273,7 @@
       </div>
     </div>
 
-    <script src="js/scripts.js"></script>
+    <script src="js/scripts.js?v=2"></script>
   </div>
 </body>
 </html>
