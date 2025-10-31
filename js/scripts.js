@@ -1388,7 +1388,7 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
         `${polycarbonateLine}\n` +
         `Снеговая нагрузка: ${snowLoadFinalText}\n` +
         `Горизонтальные стяжки: ${horizontalTies}\n` +
-        `Комплектация: ${equipment}\n\n` +
+        `Комплектация: ${equipment}\n` +
         `${basePriceText}\n`;
 
     if (assemblyText) {
@@ -1403,7 +1403,29 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
     if (deliveryPrice > 0) {
         commercialOffer += `\nДоставка - ${formatPrice(deliveryPrice)} рублей\n`;
     }
-    commercialOffer += `\nИтоговая стоимость - ${formatPrice(finalTotalPrice)} рублей`;
+    // Формируем дату: текущая дата + 7 дней
+    const currentDate = new Date();
+    const expirationDate = new Date(currentDate);
+    expirationDate.setDate(currentDate.getDate() + 7);
+    
+    // Форматируем дату в формат ДД.ММ.ГГГГ
+    const day = expirationDate.getDate().toString().padStart(2, '0');
+    const month = (expirationDate.getMonth() + 1).toString().padStart(2, '0');
+    const year = expirationDate.getFullYear();
+    const formattedDate = `${day}.${month}.${year}`;
+    
+    // Если сумма больше 35000 рублей - используем расширенный формат с подарком
+    if (finalTotalPrice > 35000) {
+        commercialOffer += `\nИтого: ${formatPrice(finalTotalPrice)} ₽\n\n` +
+            `💳 Без предоплаты — оплата по факту.\n` +
+            `🎁 Вам доступен подарок.\n` +
+            `⏳ Предложение действительно до ${formattedDate}.`;
+    } else {
+        // Если сумма 35000 и меньше - стандартный формат
+        commercialOffer += `\nИтоговая стоимость - ${formatPrice(finalTotalPrice)} рублей\n\n` +
+            `💳 Без предоплаты — оплата по факту\n\n` +
+            `⏳ Предложение действительно до ${formattedDate}`;
+    }
 
     // Выводим сформированное КП в textarea
     document.getElementById("commercial-offer").value = commercialOffer;
