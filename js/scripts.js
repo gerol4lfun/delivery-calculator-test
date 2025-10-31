@@ -20,7 +20,8 @@ function normalizeString(str) {
 }
 
 
-// Пользователи
+// Пользователи (старая система - оставляем для обратной совместимости, но больше не используется)
+// Пароли теперь хранятся в Supabase в таблице users
 const users = [
     { login: "admin",      password: "NewAdmPassword123!" },
     { login: "Юлия",       password: "NewYuliaPass456!" },
@@ -33,6 +34,9 @@ const users = [
     { login: "Manager9",   password: "NewManager9Pass369!" },
     { login: "Manager10",  password: "NewManager10Pass147!" }
 ];
+
+// Ключ для админа в localStorage (для доступа к админ-панели)
+const ADMIN_KEY = 'admin_access_granted';
 
 // Приоритеты форм (чем меньше число, тем выше в списке)
 const formPriority = {
@@ -311,8 +315,8 @@ ymaps.ready(() => {
     // const suggestView = new ymaps.SuggestView('address'); // Удалено, т.к. мы используем собственные подсказки
 });
 
-// Функция аутентификации
-function authenticate() {
+// Функция аутентификации через Supabase
+async function authenticate() {
     const loginInput = document.getElementById("login");
     const passwordInput = document.getElementById("password");
     const authError = document.getElementById("auth-error");
@@ -320,19 +324,73 @@ function authenticate() {
     const login = loginInput.value.trim();
     const password = passwordInput.value.trim();
 
-    // Проверяем логин и пароль
-    const user = users.find(u => u.login === login && u.password === password);
+    if (!login || !password) {
+        authError.style.display = "block";
+        return;
+    }
 
-    if (user) {
-        // Если пользователь найден, скрываем окно авторизации и показываем калькулятор
+    try {
+        // Проверяем логин и пароль в Supabase
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('id, login, password, password_version, is_active')
+            .eq('login', login)
+            .eq('is_active', true)
+            .single();
+
+        if (error || !data) {
+            // Если не найдено в Supabase, пробуем старую систему (для обратной совместимости)
+            const user = users.find(u => u.login === login && u.password === password);
+            if (user) {
+                authError.style.display = "none";
+                localStorage.setItem('savedLogin', login);
+                localStorage.setItem('appVersion', APP_VERSION);
+                localStorage.setItem('passwordVersion', '1'); // Старая версия
+                
+                // Проверяем, не админ ли это (для доступа к админ-панели)
+                if (login === 'admin' || login.toLowerCase() === 'admin') {
+                    localStorage.setItem(ADMIN_KEY, 'true');
+                    console.log("Админ вошёл в систему (старая система), доступ к админ-панели разрешён");
+                } else {
+                    localStorage.removeItem(ADMIN_KEY);
+                }
+                
+                document.getElementById("auth-container").classList.add("hidden");
+                document.getElementById("calculator-container").classList.remove("hidden");
+                await initializeCalculator();
+            } else {
+                authError.style.display = "block";
+            }
+            return;
+        }
+
+        // Проверяем пароль
+        if (data.password !== password) {
+            authError.style.display = "block";
+            return;
+        }
+
+        // Если всё верно, сохраняем данные в localStorage
         authError.style.display = "none";
-        localStorage.setItem('savedLogin', login); // Сохраняем логин
-        localStorage.setItem('appVersion', APP_VERSION); // Сохраняем версию приложения
+        localStorage.setItem('savedLogin', login);
+        localStorage.setItem('appVersion', APP_VERSION);
+        localStorage.setItem('passwordVersion', data.password_version.toString());
+        localStorage.setItem('userId', data.id.toString());
+
+        // Проверяем, не админ ли это (для доступа к админ-панели)
+        // Важно: проверяем точно как 'admin' (без toLowerCase, так как в базе может быть другой регистр)
+        if (login === 'admin' || login.toLowerCase() === 'admin') {
+            localStorage.setItem(ADMIN_KEY, 'true');
+            console.log("Админ вошёл в систему, доступ к админ-панели разрешён");
+        } else {
+            localStorage.removeItem(ADMIN_KEY);
+        }
+
         document.getElementById("auth-container").classList.add("hidden");
         document.getElementById("calculator-container").classList.remove("hidden");
-        initializeCalculator();
-    } else {
-        // Если пользователь не найден — показываем ошибку
+        await initializeCalculator();
+    } catch (err) {
+        console.error("Ошибка при авторизации:", err);
         authError.style.display = "block";
     }
 }
@@ -340,22 +398,101 @@ function authenticate() {
 
 // Функция выхода
 function logout() {
+    console.log("=== Выход из системы ===");
+    try {
+        const savedLogin = localStorage.getItem('savedLogin');
+        console.log("Выход пользователя:", savedLogin);
+        
+        localStorage.removeItem('savedLogin');
+        localStorage.removeItem('passwordVersion');
+        localStorage.removeItem('userId');
+        localStorage.removeItem(ADMIN_KEY);
+        
+        const authContainer = document.getElementById("auth-container");
+        const calcContainer = document.getElementById("calculator-container");
+        
+        if (authContainer) {
+            authContainer.classList.remove("hidden");
+        } else {
+            console.error("auth-container не найден!");
+        }
+        
+        if (calcContainer) {
+            calcContainer.classList.add("hidden");
+        } else {
+            console.error("calculator-container не найден!");
+        }
+        
+        // Скрываем админ-панель, если открыта
+        const adminPanel = document.getElementById("admin-panel");
+        if (adminPanel) {
+            adminPanel.classList.add("hidden");
+        }
+        
+        // Сброс калькулятора при выходе
+        resetDropdown('form', 'Сначала выберите город');
+        resetDropdown('width', 'Сначала выберите форму');
+        resetDropdown('length', 'Сначала выберите ширину');
+        resetDropdown('frame', 'Сначала выберите длину');
+        resetDropdown('polycarbonate', 'Сначала выберите город');
+        resetDropdown('arcStep', 'Выберите шаг');
+        resetAdditionalOptions();
+        
+        const offerField = document.getElementById("commercial-offer");
+        if (offerField) {
+            offerField.value = "Здесь будет ваше коммерческое предложение.";
+        }
+        
+        const resultDiv = document.getElementById("result");
+        if (resultDiv) {
+            resultDiv.innerText = "";
+        }
+        
+        if (mapInstance && currentRoute) {
+            mapInstance.geoObjects.remove(currentRoute);
+        }
+        
+        console.log("✅ Выход выполнен");
+    } catch (error) {
+        console.error("❌ Ошибка при выходе:", error);
+        // Принудительная очистка localStorage и перезагрузка
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+// Функция проверки актуальности пароля пользователя
+async function checkPasswordVersion() {
     const savedLogin = localStorage.getItem('savedLogin');
-    localStorage.removeItem('savedLogin');
-    document.getElementById("auth-container").classList.remove("hidden");
-    document.getElementById("calculator-container").classList.add("hidden");
-    // Сброс калькулятора при выходе
-    resetDropdown('form', 'Сначала выберите город');
-    resetDropdown('width', 'Сначала выберите форму');
-    resetDropdown('length', 'Сначала выберите ширину');
-    resetDropdown('frame', 'Сначала выберите длину');
-    resetDropdown('polycarbonate', 'Сначала выберите город');
-    resetDropdown('arcStep', 'Выберите шаг');
-    resetAdditionalOptions();
-    document.getElementById("commercial-offer").value = "Здесь будет ваше коммерческое предложение.";
-    document.getElementById("result").innerText = "";
-    if (mapInstance && currentRoute) {
-        mapInstance.geoObjects.remove(currentRoute);
+    const savedPasswordVersion = localStorage.getItem('passwordVersion');
+
+    if (!savedLogin || !savedPasswordVersion) {
+        return false; // Нет сохраненных данных
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('password_version, is_active')
+            .eq('login', savedLogin)
+            .single();
+
+        if (error || !data) {
+            // Если пользователь не найден в Supabase, проверяем старую систему
+            return parseInt(savedPasswordVersion) === 1; // Старая система всегда версия 1
+        }
+
+        // Если пользователь деактивирован или версия пароля не совпадает - выход
+        if (!data.is_active || data.password_version.toString() !== savedPasswordVersion) {
+            logout();
+            alert("Сессия истекла. Пожалуйста, войдите снова.");
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error("Ошибка при проверке версии пароля:", err);
+        return false;
     }
 }
 
@@ -1288,17 +1425,62 @@ function resetDelivery() {
 
 // Инициализация при загрузке страницы
 window.onload = async function () {
+    console.log("=== Инициализация страницы v2 ===");
+    
     if (localStorage.getItem('appVersion') !== APP_VERSION) {
         localStorage.clear();
     }
     const savedLogin = localStorage.getItem('savedLogin');
+    console.log("Сохранённый логин:", savedLogin);
+    
     if (savedLogin) {
-        document.getElementById("login").value = savedLogin;
-        document.getElementById("password").focus();
-        document.getElementById("auth-container").classList.add("hidden");
-        document.getElementById("calculator-container").classList.remove("hidden");
-        await initializeCalculator();
+        // Убеждаемся, что admin флаг установлен, если это admin (ДО проверки пароля)
+        if (savedLogin === 'admin' || savedLogin.toLowerCase() === 'admin') {
+            localStorage.setItem(ADMIN_KEY, 'true');
+            console.log("✅ Admin обнаружен при загрузке, флаг установлен ПЕРЕД проверкой");
+        }
+        
+        // Проверяем актуальность версии пароля
+        const isPasswordValid = await checkPasswordVersion();
+        if (isPasswordValid) {
+            document.getElementById("login").value = savedLogin;
+            document.getElementById("password").focus();
+            document.getElementById("auth-container").classList.add("hidden");
+            document.getElementById("calculator-container").classList.remove("hidden");
+            
+            await initializeCalculator();
+        } else {
+            // Версия пароля не совпадает - разлогиниваем
+            localStorage.clear();
+            document.getElementById("login").value = savedLogin;
+        }
+    } else {
+        console.log("Пользователь не залогинен");
     }
+    
+    // Периодическая проверка версии пароля каждые 30 секунд
+    setInterval(async () => {
+        const savedLogin = localStorage.getItem('savedLogin');
+        if (savedLogin && document.getElementById("calculator-container").classList.contains("hidden") === false) {
+            await checkPasswordVersion();
+        }
+    }, 30000); // Проверка каждые 30 секунд
+    
+    // Принудительная проверка кнопки админа через 1 секунду (на случай задержки)
+    setTimeout(() => {
+        const savedLogin = localStorage.getItem('savedLogin');
+        if (savedLogin === 'admin' || savedLogin?.toLowerCase() === 'admin') {
+            const adminBtn = document.getElementById('admin-button');
+            if (adminBtn) {
+                adminBtn.classList.remove('hidden');
+                adminBtn.style.display = 'block';
+                adminBtn.style.visibility = 'visible';
+                console.log("✅ Принудительное отображение кнопки админа");
+            } else {
+                console.error("❌ Кнопка admin-button всё ещё не найдена после задержки");
+            }
+        }
+    }, 1000);
 }
 
 // Функция загрузки городов при инициализации калькулятора
@@ -1308,6 +1490,68 @@ async function initializeCalculator() {
 
     document.getElementById("polycarbonate").addEventListener("change", calculateGreenhouseCost);
     document.getElementById("arcStep").addEventListener("change", calculateGreenhouseCost);
+    
+    // Проверяем права админа и показываем/скрываем кнопку админ-панели
+    const savedLogin = localStorage.getItem('savedLogin');
+    console.log("=== Проверка прав админа ===");
+    console.log("Логин из localStorage:", savedLogin);
+    console.log("ADMIN_KEY значение:", localStorage.getItem(ADMIN_KEY));
+    
+    // Проверяем, является ли пользователь админом
+    const isAdminKey = localStorage.getItem(ADMIN_KEY) === 'true';
+    const isAdminByLogin = savedLogin && (savedLogin === 'admin' || savedLogin.toLowerCase() === 'admin');
+    const isAdmin = isAdminKey || isAdminByLogin;
+    
+    console.log("isAdminKey:", isAdminKey);
+    console.log("isAdminByLogin:", isAdminByLogin);
+    console.log("Итоговый isAdmin:", isAdmin);
+    
+    // Если это админ, но флаг не установлен - устанавливаем
+    if (isAdmin && localStorage.getItem(ADMIN_KEY) !== 'true') {
+        localStorage.setItem(ADMIN_KEY, 'true');
+        console.log("✅ Флаг админа установлен");
+    }
+    
+    // Даём немного времени на рендеринг DOM
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const adminButton = document.getElementById("admin-button");
+    console.log("admin-button элемент:", adminButton);
+    
+    if (adminButton) {
+        if (isAdmin) {
+            adminButton.classList.remove("hidden");
+            adminButton.style.display = "block";
+            adminButton.style.visibility = "visible";
+            console.log("✅ Кнопка админ-панели ПОКАЗАНА для пользователя:", savedLogin);
+            console.log("Проверка класса hidden:", adminButton.classList.contains('hidden'));
+            await loadUsersForAdmin(); // Загружаем список пользователей для админ-панели
+        } else {
+            adminButton.classList.add("hidden");
+            adminButton.style.display = "none";
+            console.log("❌ Кнопка админ-панели СКРЫТА для пользователя:", savedLogin);
+        }
+    } else {
+        console.error("❌ Кнопка admin-button НЕ НАЙДЕНА в DOM!");
+        // Попробуем найти через querySelector
+        const foundBtn = document.querySelector('#admin-button');
+        console.error("Попытка найти через querySelector:", foundBtn);
+        
+        // Если не найдена, попробуем создать динамически
+        if (!foundBtn && isAdmin) {
+            console.log("⚠️ Пытаемся создать кнопку динамически...");
+            const container = document.querySelector('.calculator-container .container');
+            if (container) {
+                const newBtn = document.createElement('button');
+                newBtn.id = 'admin-button';
+                newBtn.className = 'admin-button';
+                newBtn.textContent = 'Админ-панель';
+                newBtn.onclick = toggleAdminPanel;
+                container.insertBefore(newBtn, container.firstChild.nextSibling);
+                console.log("✅ Кнопка создана динамически");
+            }
+        }
+    }
 }
 
 // Функция добавления обработчиков событий для дополнительных опций
@@ -1379,3 +1623,178 @@ ymaps.ready(() => {
         }
     });
 });
+
+// ==================== АДМИН-ПАНЕЛЬ ====================
+
+// Загрузка списка пользователей для админ-панели
+async function loadUsersForAdmin() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('id, login, is_active')
+            .order('login');
+
+        if (error) {
+            console.error("Ошибка при загрузке пользователей:", error);
+            return;
+        }
+
+        const userSelect = document.getElementById('admin-user-select');
+        if (!userSelect) return;
+
+        userSelect.innerHTML = '<option value="" disabled selected>Выберите пользователя</option>';
+        
+        if (data && data.length > 0) {
+            data.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.login}${!user.is_active ? ' (неактивен)' : ''}`;
+                userSelect.appendChild(option);
+            });
+        }
+    } catch (err) {
+        console.error("Ошибка при загрузке пользователей:", err);
+    }
+}
+
+// Переключение видимости админ-панели
+function toggleAdminPanel() {
+    const adminPanel = document.getElementById("admin-panel");
+    if (!adminPanel) return;
+
+    const isHidden = adminPanel.classList.contains("hidden");
+    
+    if (isHidden) {
+        // Проверяем права админа перед показом
+        const isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
+        if (!isAdmin) {
+            alert("У вас нет прав доступа к админ-панели.");
+            return;
+        }
+        adminPanel.classList.remove("hidden");
+        loadUsersForAdmin();
+        // Очищаем поля при открытии
+        document.getElementById("admin-new-password").value = "";
+        document.getElementById("admin-confirm-password").value = "";
+        document.getElementById("admin-message").innerText = "";
+    } else {
+        adminPanel.classList.add("hidden");
+    }
+}
+
+// Изменение пароля пользователя
+async function changeUserPassword() {
+    const userId = document.getElementById("admin-user-select").value;
+    const newPassword = document.getElementById("admin-new-password").value.trim();
+    const confirmPassword = document.getElementById("admin-confirm-password").value.trim();
+    const messageDiv = document.getElementById("admin-message");
+
+    // Валидация
+    if (!userId) {
+        messageDiv.innerText = "Выберите пользователя!";
+        messageDiv.style.color = "red";
+        return;
+    }
+
+    if (!newPassword) {
+        messageDiv.innerText = "Введите новый пароль!";
+        messageDiv.style.color = "red";
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        messageDiv.innerText = "Пароль должен содержать минимум 6 символов!";
+        messageDiv.style.color = "red";
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        messageDiv.innerText = "Пароли не совпадают!";
+        messageDiv.style.color = "red";
+        return;
+    }
+
+    // Проверяем права админа
+    const isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
+    if (!isAdmin) {
+        messageDiv.innerText = "У вас нет прав для изменения паролей!";
+        messageDiv.style.color = "red";
+        return;
+    }
+
+    try {
+        // Получаем логин пользователя
+        const userSelect = document.getElementById("admin-user-select");
+        const userLogin = userSelect.selectedOptions[0].textContent.split(' (')[0]; // Убираем "(неактивен)" если есть
+        
+        // Пробуем вызвать RPC функцию
+        const { data: rpcData, error: rpcError } = await supabaseClient.rpc('update_user_password', {
+            p_login: userLogin,
+            p_new_password: newPassword
+        });
+
+        if (rpcError) {
+            // Если RPC не работает, пытаемся обновить напрямую (может не работать из-за RLS политик)
+            // Получаем текущую версию пароля
+            const { data: currentUser, error: fetchError } = await supabaseClient
+                .from('users')
+                .select('password_version')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError) {
+                throw new Error(`Не удалось получить данные пользователя: ${fetchError.message}`);
+            }
+
+            // Пробуем обновить напрямую
+            const { error: updateError } = await supabaseClient
+                .from('users')
+                .update({
+                    password: newPassword,
+                    password_version: (currentUser.password_version || 1) + 1,
+                    last_password_change: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+
+            if (updateError) {
+                // Если обновление не работает через anon роль (что вероятно из-за RLS)
+                // Показываем инструкцию для использования SQL Editor
+                const sqlQuery = `UPDATE users 
+SET password = '${newPassword}', 
+    password_version = password_version + 1, 
+    last_password_change = NOW(),
+    updated_at = NOW()
+WHERE id = ${userId};`;
+                
+                messageDiv.innerHTML = `
+                    <strong style="color: orange;">⚠️ Не удалось изменить пароль через интерфейс.</strong><br><br>
+                    <strong>Используйте SQL Editor в Supabase:</strong><br>
+                    <textarea style="width: 100%; height: 80px; margin-top: 10px; font-family: monospace;" readonly>${sqlQuery}</textarea>
+                    <p style="margin-top: 10px;">Скопируйте SQL запрос выше и выполните его в SQL Editor вашего Supabase проекта.</p>
+                    <p><strong>Или</strong> обновите политику RLS для таблицы users, разрешив админам обновлять пароли.</p>
+                `;
+                messageDiv.style.color = "orange";
+                console.error("Ошибка обновления пароля:", updateError);
+                return;
+            }
+        }
+
+        // Если всё успешно
+        messageDiv.innerText = `✅ Пароль успешно изменён! Все пользователи с логином "${userLogin}" будут разлогинены в течение 30 секунд.`;
+        messageDiv.style.color = "green";
+
+        // Очищаем поля
+        document.getElementById("admin-new-password").value = "";
+        document.getElementById("admin-confirm-password").value = "";
+        document.getElementById("admin-user-select").value = "";
+
+        // Перезагружаем список пользователей
+        await loadUsersForAdmin();
+
+    } catch (err) {
+        console.error("Ошибка при изменении пароля:", err);
+        messageDiv.innerText = `❌ Ошибка: ${err.message}`;
+        messageDiv.style.color = "red";
+    }
+}
