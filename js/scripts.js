@@ -1,7 +1,7 @@
 
 // Константа для контроля отладки
 const DEBUG = false; // Отключено для продакшена
-const APP_VERSION = "v5"; // Обновите значение, если вносите критичные изменения (например, новые пароли)
+const APP_VERSION = "v6"; // Версия 6: старая система авторизации полностью отключена
 
 /**
  * Функция форматирования чисел с точками
@@ -20,20 +20,11 @@ function normalizeString(str) {
 }
 
 
-// Пользователи (старая система - оставляем для обратной совместимости, но больше не используется)
-// Пароли теперь хранятся в Supabase в таблице users
-const users = [
-    { login: "admin",      password: "NewAdmPassword123!" },
-    { login: "Юлия",       password: "NewYuliaPass456!" },
-    { login: "Руслан",     password: "NewRuslanPass789!" },
-    { login: "Ольга",      password: "NewOlgaPass321!" },
-    { login: "Екатерина",  password: "NewEkaterinaPass654!" },
-    { login: "Manager6",   password: "NewManager6Pass987!" },
-    { login: "Manager7",   password: "NewManager7Pass135!" },
-    { login: "Manager8",   password: "NewManager8Pass246!" },
-    { login: "Manager9",   password: "NewManager9Pass369!" },
-    { login: "Manager10",  password: "NewManager10Pass147!" }
-];
+// Пользователи (СТАРАЯ СИСТЕМА УДАЛЕНА - больше не используется!)
+// ВСЕ пароли теперь хранятся ТОЛЬКО в Supabase в таблице users
+// Этот массив оставлен для справки, но не используется для авторизации
+// УДАЛИТЕ ЭТОТ МАССИВ, ЕСЛИ ХОТИТЕ ПОЛНОСТЬЮ УБРАТЬ СТАРЫЕ ПАРОЛИ ИЗ КОДА
+const users = []; // Пустой массив - старая система отключена
 
 // Ключ для админа в localStorage (для доступа к админ-панели)
 const ADMIN_KEY = 'admin_access_granted';
@@ -339,28 +330,9 @@ async function authenticate() {
             .single();
 
         if (error || !data) {
-            // Если не найдено в Supabase, пробуем старую систему (для обратной совместимости)
-            const user = users.find(u => u.login === login && u.password === password);
-            if (user) {
-                authError.style.display = "none";
-                localStorage.setItem('savedLogin', login);
-                localStorage.setItem('appVersion', APP_VERSION);
-                localStorage.setItem('passwordVersion', '1'); // Старая версия
-                
-                // Проверяем, не админ ли это (для доступа к админ-панели)
-                if (login === 'admin' || login.toLowerCase() === 'admin') {
-                    localStorage.setItem(ADMIN_KEY, 'true');
-                    console.log("Админ вошёл в систему (старая система), доступ к админ-панели разрешён");
-                } else {
-                    localStorage.removeItem(ADMIN_KEY);
-                }
-                
-                document.getElementById("auth-container").classList.add("hidden");
-                document.getElementById("calculator-container").classList.remove("hidden");
-                await initializeCalculator();
-            } else {
-                authError.style.display = "block";
-            }
+            // Если не найдено в Supabase - пользователь не существует
+            console.error("Пользователь не найден в Supabase:", error);
+            authError.style.display = "block";
             return;
         }
 
@@ -478,8 +450,11 @@ async function checkPasswordVersion() {
             .single();
 
         if (error || !data) {
-            // Если пользователь не найден в Supabase, проверяем старую систему
-            return parseInt(savedPasswordVersion) === 1; // Старая система всегда версия 1
+            // Если пользователь не найден в Supabase - разлогиниваем
+            console.error("Пользователь не найден в Supabase при проверке версии:", error);
+            logout();
+            alert("Ошибка проверки аккаунта. Пожалуйста, войдите снова.");
+            return false;
         }
 
         // Если пользователь деактивирован или версия пароля не совпадает - выход
