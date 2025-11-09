@@ -1370,11 +1370,11 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
     const polyNormalized = polycarbonateValue.replace(/\s+/g, "").toLowerCase();
     if (polyNormalized !== "безполикарбоната") {
         if (polyNormalized === "стандарт4мм") {
-            polycarbonateLine += `, 0.55 кг/м2`;
+            polycarbonateLine += `, 0.47 кг/м2`;
         } else if (polyNormalized === "люкс4мм" || polyNormalized === "люкс4 мм") {
-            polycarbonateLine += `, 0.72 кг/м2`;
+            polycarbonateLine += `, 0.52 кг/м2`;
         } else if (polyNormalized === "премиум6мм" || polyNormalized === "премиум6 мм") {
-            polycarbonateLine += `, 1.2 кг/м2`;
+            polycarbonateLine += `, 0.8 кг/м2`;
         }
     }
 
@@ -1416,7 +1416,7 @@ function generateCommercialOffer(basePrice, assemblyCost, foundationCost, additi
     
     // Если сумма больше 35000 рублей - используем расширенный формат с подарком
     if (finalTotalPrice > 35000) {
-        commercialOffer += `\nИтого: ${formatPrice(finalTotalPrice)} ₽\n\n` +
+        commercialOffer += `\nИтого: ${formatPrice(finalTotalPrice)} рублей\n\n` +
             `💳 Без предоплаты — оплата по факту.\n` +
             `🎁 Вам доступен подарок.\n` +
             `⏳ Предложение действительно до ${formattedDate}.`;
